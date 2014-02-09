@@ -9,28 +9,91 @@
   </style>
 </head>
 <body>
-  <script src="http://d3js.org/d3.v3.min.js"></script>
-  <script>
-  d3.tsv("unemp_states_us_nov_2013.tsv", function(error, data){
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script>
+        // parses tsv as text
+        d3.text("unemp_states_us_nov_2013.tsv", function(text){
 
-      var table = d3.select("body").append("table"),
-      tbody = table.append("tbody");
+            // parses text as arrays per row of data, inclu headers
+            var data = d3.tsv.parseRows(text);
 
-      var rows = tbody.selectAll("tr")
-      .data(data)
-      .enter()
-      .append("tr");
+            // isolates headers from parsed data (first item in array)
+            var headers = data.shift();
 
-      var cells = rows.selectAll("td")
-      .data(function(row) {
-        return d3.range(Object.keys(row).length).map(function(column, i) {
-          return row[Object.keys(row)[i]];
-          });
-        })
-      .enter()
-      .append("td")
-      .text(function(d) { return d; });
-      });
-  </script>
+            // main title for table
+            var titles = 'Unemployment Rates in United States <br> Monthly Rankings <br> Seasonally Adjusted <br> Dec. 2013P';
+
+            // counts number of columns req'd (for colspan)
+            var cols = headers.length;
+
+
+            // head title for page
+            var pagetitle = d3.select("body")
+            .data(["Unemployment Rates in the United States"])
+            .append("h1")
+            .text(function(text) { return text; });
+
+
+            // sets up table DOM
+            var table = d3.select("body").append("table"),
+                thead = table.append("thead"),
+                tbody = table.append("tbody");
+
+            // main title of table
+            var tabletitle = thead.append("th")
+            .attr("colspan", cols)
+            .html(titles);            
+
+
+            var colheads = thead.append("th")
+            .data(headers)
+            .enter()
+            .append("th")
+            .text(function(d) { return d; });
+
+            // appends rows (from sample code)
+            var rows = tbody.selectAll("tr")
+            .data(data)
+            .enter()
+            .append("tr");
+            
+            // appends cells for each row (from sample code)
+            var cells = rows.selectAll("td")
+            .data(function(row) {
+                return d3.range(cols).map(function(column, i) {
+                    return row[Object.keys(row)[i]];
+
+                });
+            })
+            .enter()
+            .append("td")
+            .text(function(d) { return d; });
+        });
+        
+
+
+
+/*
+        d3.tsv("unemp_states_us_nov_2013.tsv", function(error, data){
+            var table = d3.select("body").append("table"),
+            thead = table.append("thead"),
+            tbody = table.append("tbody");
+
+            // counts number of columns needed, per datum 0
+            var cols = Object.keys(data[0]).length;
+
+            // adds title to table
+            var titles = thead
+
+            // adds column titles as first row in dataset   
+            var headers = Object.keys(data[0]);
+            data.unshift(headers);
+
+
+
+
+
+        });*/
+    </script>
 </body>
 </html>
