@@ -1,0 +1,22 @@
+body
+{
+	font-family: 'Alef', sans-serif;
+	font-weight: 400;
+}
+
+h1
+{
+	text-align: center;
+	font-weight: 700 !important ;
+}
+table
+{
+	margin-left: auto;
+	margin-right: auto;
+	line-height: 1;
+}
+.colhead
+{
+	text-align: left;
+}
+
