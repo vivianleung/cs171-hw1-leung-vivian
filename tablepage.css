@@ -38,17 +38,36 @@ caption
 	background-color: #005A5A;
 
 }
-.colhead
+thead tr
 {
-	text-align: left;
+	text-align: center;
 	color: #005A5A;
 	border-bottom-style: solid;
 	border-bottom-width: 2px;
 	border-bottom-color: #005A5A;
 }
-.col1
+tbody tr .col1
 {
 	text-align: left;
 }
 
+.ascending
+{
+	background-color: #800033;
+	color: #FFFFFF;
+}
+.descending
+{
+	background-color: #006600;
+	color: #FFFFFF;
+}
 
+.active
+{
+	background-color: rgba(255, 204, 0, 0.5) !important;
+}
+
+tr td
+{
+	background-color: inherit !important;
+}
