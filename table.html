@@ -42,29 +42,62 @@
             .html(titles);
 
             // column headers
+            var i = 0;
             var colheads = thead.append("tr").selectAll("th")
                 .data(headers)
                 .enter()
                 .append("th")
-                .attr("class", "colhead")
-                .text(function(d) { return d; });
+                .attr("class", function() { return "colhead" + i++; })
+                .text(function(d) { return d; })
+
+                // sorting mechanism
+                .on("click", function(){
+                    var sortcol = d3.select(this).attr("class").substring(7);
+                    var rowcount = 0;
+                    tbody.selectAll("tr")
+                        .sort(function(a,b) {
+                            return d3.ascending(a[sortcol], b[sortcol]);
+                        })
+                        .attr("class", function() {
+                            return "row" + rowcount++; })
+                        .style('background-color', function() {
+                            return normalcolor(d3.select(this).attr("class")); })
+                    d3.select(this)
+                        .style("background-color", "#FF0066")
+                        .style("color", "#FFFFFF")
+                        .classed("ascending", function()
+                            if (d3.select(this).classed("active", true)) { return false; }
+                            else { return true; }
+                        );
+
+                });
+
+
+            var rows = renderrows(tbody);
+            var cells = rendercells(rows);
 
             // appends rows (from sample code)
-            var rowcount = 0;
-            var rows = tbody.selectAll("tr")
-                .data(data)
-                .enter()
-                .append("tr")
-                .attr("class", function() {
-                    return "row" + rowcount++; })
-                .style('background-color', function() {
-                    return normalcolor(d3.select(this).attr("class")); })
-                .on("mouseover", function() {
-                    d3.select(this).style('background-color', "rgba(255, 204, 0, 0.5)");
-                })
-                .on("mouseout", function() {
-                    d3.select(this).style('background-color', normalcolor(d3.select(this).attr("class")) )
-                });
+            function renderrows(tbody){            
+                var rowcount = 0;
+                var rows = tbody.selectAll("tr")
+                    .data(data)
+                    .enter()
+                    .append("tr")
+                    .attr("class", function() {
+                        return "row" + rowcount++; })
+                    .style('background-color', function() {
+                        console.log(d3.select(this).attr("class"));
+                        return normalcolor(d3.select(this).attr("class")); })
+                    
+                    // highlighting / dehighlighting for mouseover
+                    .on("mouseover", function() {
+                        d3.select(this).style('background-color', "rgba(255, 204, 0, 0.5)");
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this).style('background-color', normalcolor(d3.select(this).attr("class")) )
+                    });
+                return rows;
+            }
 
             function normalcolor(row){
                 row = row.substring(3);
@@ -74,38 +107,40 @@
             
             
             // appends cells for each row (from sample code)
-            var column = 0;
-            var cells = rows.selectAll("td")
-                .data(function(row) {
-                    return d3.range(cols)
-                        .map(function(i) {
-                            return row[ Object.keys(row)[i] ];
-                    });
-                })
-                .enter()
-                .append("td")
-                .attr("class", function() {
-                    if (column > cols - 1) { column = 0; }
-                    return "col" + column++;
-                })
-                .text(function(d) { 
-                    return d; })
+            function rendercells(rows){
+                var column = 0;
+                var cells = rows.selectAll("td")
+                    .data(function(row) {
+                        return d3.range(cols)
+                            .map(function(i) {
+                                return row[ Object.keys(row)[i] ];
+                        });
+                    })
+                    .enter()
+                    .append("td")
+                    .attr("class", function() {
+                        if (column > cols - 1) { column = 0; }
+                        return "col" + column++;
+                    })
+                    .text(function(d) { 
+                        return d; })
 
-                // highlight column on mouseover
-                .on("mouseover", function(){
-                    var selectedcol = d3.select(this).attr("class")
-                        .substring(3);
-                    d3.selectAll("td.col" + selectedcol)
-                        .style('background-color', "rgba(255, 204, 0, 0.5)");
-                })
+                    // highlight column on mouseover
+                    .on("mouseover", function(){
+                        var hovercol = d3.select(this).attr("class")
+                            .substring(3);
+                        d3.selectAll("td.col" + hovercol)
+                            .style('background-color', "rgba(255, 204, 0, 0.5)");
+                    })
 
-                // remove highlight from column on mouseout
-                .on("mouseout", function() {
-                    var selectedcol = d3.select(this).attr("class")
-                        .substring(3);
-                    d3.selectAll("td.col" + selectedcol)
-                        .style('background-color', "inherit");
-            });
+                    // remove highlight from column on mouseout
+                    .on("mouseout", function() {
+                        var hovercol = d3.select(this).attr("class")
+                            .substring(3);
+                        d3.selectAll("td.col" + hovercol)
+                            .style('background-color', "inherit");
+                });
+            }
         });
         
 
