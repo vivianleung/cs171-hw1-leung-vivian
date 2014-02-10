@@ -19,7 +19,7 @@
             var headers = data.shift();
 
             // main title for table
-            var titles = 'Unemployment Rates in United States <br> Monthly Rankings <br> Seasonally Adjusted <br> Dec. 2013P';
+            var titles = 'Unemployment Rates For States <br> Monthly Rankings <br> Seasonally Adjusted <br> Dec. 2013P';
 
             // counts number of columns req'd (for colspan)
             var cols = headers.length;
@@ -27,7 +27,7 @@
 
             // head title for page
             var pagetitle = d3.select("body")
-            .data(["Unemployment Rates in the United States"])
+            .data(["Unemployment Rates For States"])
             .append("h1")
             .text(function(text) { return text; });
 
@@ -38,59 +38,75 @@
                 tbody = table.append("tbody");
 
             // main title of table
-            var tabletitle = thead.append("th")
-            .attr("colspan", cols)
-            .html(titles)
+            var tabletitle = table.append("caption")
+            .html(titles);
 
             // column headers
             var colheads = thead.append("tr").selectAll("th")
-            .data(headers)
-            .enter()
-            .append("th")
-            .attr("class", "colhead")
-            .text(function(d) { return d; });
+                .data(headers)
+                .enter()
+                .append("th")
+                .attr("class", "colhead")
+                .text(function(d) { return d; });
 
             // appends rows (from sample code)
             var rowcount = 0;
             var rows = tbody.selectAll("tr")
-            .data(data)
-            .enter()
-            .append("tr")
-            .style('background-color', function() {
-                rowcount++;
-                if ((rowcount - 1) % 2 == 0) { return "#C9D1D8"; }
+                .data(data)
+                .enter()
+                .append("tr")
+                .attr("class", function() {
+                    return "row" + rowcount++; })
+                .style('background-color', function() {
+                    return normalcolor(d3.select(this).attr("class")); })
+                .on("mouseover", function() {
+                    d3.select(this).style('background-color', "rgba(255, 204, 0, 0.5)");
+                })
+                .on("mouseout", function() {
+                    d3.select(this).style('background-color', normalcolor(d3.select(this).attr("class")) )
+                });
+
+            function normalcolor(row){
+                row = row.substring(3);
+                if (row % 2 == 0) { return "#B2D9D9"; }
                 else { return "#FFFFFF"; }
-            });
+            }
+            
             
             // appends cells for each row (from sample code)
+            var column = 0;
             var cells = rows.selectAll("td")
-            .data(function(row) {
-                return d3.range(cols).map(function(column, i) {
-                    return row[Object.keys(row)[i]];
+                .data(function(row) {
+                    return d3.range(cols)
+                        .map(function(i) {
+                            return row[ Object.keys(row)[i] ];
+                    });
+                })
+                .enter()
+                .append("td")
+                .attr("class", function() {
+                    if (column > cols - 1) { column = 0; }
+                    return "col" + column++;
+                })
+                .text(function(d) { 
+                    return d; })
 
-                });
-            })
-            .enter()
-            .append("td")
-            .text(function(d) { return d; })
-            .on("mouseover", highlight)
-            .on("mouseout", normalcolor);
-            
+                // highlight column on mouseover
+                .on("mouseover", function(){
+                    var selectedcol = d3.select(this).attr("class")
+                        .substring(3);
+                    d3.selectAll("td.col" + selectedcol)
+                        .style('background-color', "rgba(255, 204, 0, 0.5)");
+                })
+
+                // remove highlight from column on mouseout
+                .on("mouseout", function() {
+                    var selectedcol = d3.select(this).attr("class")
+                        .substring(3);
+                    d3.selectAll("td.col" + selectedcol)
+                        .style('background-color', "inherit");
+            });
         });
-
-        var highlight = d3.select("tbody").selectAll("td").on("mouseover", function() {
-                d3.select(this).style('background-color', "#FFCC00")});
-
-        var normalcolor = d3.select("tbody").selectAll("td").on("mouseout", function() {
-                d3.select(this).style('background-color', "#FFFFFF")});
-        
-
-
-        /**
-          * Select all cells
-          * 
-
-          */
         
 
 
