@@ -52,57 +52,88 @@
 
                 // sorting mechanism
                 .on("click", function(){
-                    var sortcol = d3.select(this).data();
-                    if (sortcol == "State") { 
-                        sortState(d3.select(this).attr("class")); }
-                    var headerState = d3.select(this)
-                        .classed("ascending", function(){
-                            if (d3.select(this).classed("ascending")) { 
-                                d3.select(this).classed("descending", true);
-                                return false; }
-                            else { 
-                                d3.select(this).classed("descending", false);
-                                return true }
-                        })
+                    var sortHead = d3.select(this);
+                    var sortcol = sortHead.data();
+                    var direction = sortHead.attr("class");
+                    var data = tbody.selectAll("tr");
+                    var heads = thead.selectAll("th");
+
+                    if (sortcol == "State") { sortState(data, direction); }
+                    else if (sortcol == "Rate" || sortcol == "Rank") { sortNumbers(data, direction, sortcol); }
+
+                    formatrows(data);
+                    // modify header class (up/down) and CSS
+                    if (sortHead.classed("ascending")){
+                        heads.classed({"ascending": false, "descending": false});
+                        sortHead.classed("descending", true);                        
+                    }
+                    else {
+                        heads.classed({"ascending": false, "descending": false});
+                        sortHead.classed("ascending", true);
+                    }
                 });
 
 
             var rows = renderrows(tbody);
             var cells = rendercells(rows);
 
-            // sorts data by State
-            function sortState(direction){
-                var rowcount = 0;
+            sortNumbers(tbody.selectAll("tr"), "none", "Rank");
+            formatrows(tbody.selectAll("tr"));
 
-                tbody.selectAll("tr")
-                    .sort(function(a,b) {
-                        if (direction == "ascending") { 
-                            return d3.descending(a[1], b[1]); }             
-                        else { return d3.ascending(a[1], b[1]); }
-                    })
-                    .attr("class", function() {
+            function formatrows(data)
+            {
+                var rowcount = 0;
+                data.attr("class", function() {
                         return "row" + rowcount++; })
                     .style('background-color', function() {
-                        return normalcolor(d3.select(this).attr("class")); })
+                        return normalcolor(d3.select(this).attr("class")); });   
+            }
+
+            // sorts data by State
+            function sortState(data, direction){
+                data.sort(function(a,b) {
+                    if (direction == "ascending") { 
+                        return d3.descending(a[1], b[1]); } 
+                    else { return d3.ascending(a[1], b[1]); }
+                })
+            }
+
+            // sorts data by Rate
+            function sortNumbers(data, direction, sortcol)
+            {
+                // if current sort is ascending (i.e want to sort from high to low, flip the switch)
+                var makeAscend = -1;
+                if (direction != "ascending") { makeAscend = 1; }
+
+                // figure out which column is being sorted
+                var i = null;
+                if (sortcol == "Rank") { i = 0; }
+                else { i = 2; }
+
+                data.each(function(d){ d[i] = +d[i]; })   
+                    .sort(function(a, b) {
+                        if (a[i] > b[i]) { return makeAscend; }
+                        else if (a[i] < b[i]) { return -makeAscend; }
+                        else { 
+                            if (makeAscend == 1) { return d3.ascending(a[1], b[1]); }
+                            else { return d3.descending(a[1], b[1]); }
+                        }
+                    })
             }
 
             // appends rows (from sample code)
             function renderrows(tbody){            
-                var rowcount = 0;
                 var rows = tbody.selectAll("tr")
                     .data(data)
                     .enter()
                     .append("tr")
-                    .attr("class", function() {
-                        return "row" + rowcount++; })
-                    .style('background-color', function() {
-                        return normalcolor(d3.select(this).attr("class")); })
-                    
+            
                     // highlighting / dehighlighting for mouseover
                     .on("mouseover", function() {
                         d3.select(this).classed("active", true); })
                     .on("mouseout", function() {
                         d3.select(this). classed("active", false); });
+                formatrows(rows);
                 return rows;
             }
 

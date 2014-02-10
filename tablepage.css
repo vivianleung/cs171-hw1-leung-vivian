@@ -45,6 +45,7 @@ thead tr
 	border-bottom-style: solid;
 	border-bottom-width: 2px;
 	border-bottom-color: #005A5A;
+	cursor: s-resize;
 }
 tbody tr .col1
 {
@@ -55,11 +56,14 @@ tbody tr .col1
 {
 	background-color: #800033;
 	color: #FFFFFF;
+	cursor: n-resize;
 }
 .descending
 {
 	background-color: #006600;
 	color: #FFFFFF;
+	cursor: s-resize;
+
 }
 
 .active
