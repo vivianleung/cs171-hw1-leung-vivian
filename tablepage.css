@@ -68,10 +68,7 @@ tbody tr .col1
 
 .active
 {
+	z-index: 2;
 	background-color: rgba(255, 204, 0, 0.5) !important;
 }
 
-tr td
-{
-	background-color: inherit !important;
-}

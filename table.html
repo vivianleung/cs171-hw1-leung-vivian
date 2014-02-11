@@ -59,9 +59,9 @@
                     var heads = thead.selectAll("th");
 
                     if (sortcol == "State") { sortState(data, direction); }
-                    else if (sortcol == "Rate" || sortcol == "Rank") { sortNumbers(data, direction, sortcol); }
-
-                    formatrows(data);
+                    else if (sortcol == "Rate" || sortcol == "Rank") { 
+                        sortNumbers(data, direction, sortcol); }
+                    formatcells(data);
                     // modify header class (up/down) and CSS
                     if (sortHead.classed("ascending")){
                         heads.classed({"ascending": false, "descending": false});
@@ -73,20 +73,54 @@
                     }
                 });
 
+            var rateArray = [];
+            var rates = data.forEach(function(d) { rateArray.push(+d[2]);
+                });
+
+            console.log(rateArray);
 
             var rows = renderrows(tbody);
             var cells = rendercells(rows);
 
             sortNumbers(tbody.selectAll("tr"), "none", "Rank");
-            formatrows(tbody.selectAll("tr"));
+            formatcells(tbody.selectAll("tr"));
+            renderchart(rows);
 
-            function formatrows(data)
+
+            function colorme(mini, maxi, value)
+            {
+                var color = d3.scale.linear()
+                    .domain([mini, maxi])
+                    .interpolate(d3.interpolateRgb)
+                    .range(["green", "orangered"]);
+                return color(value);
+            }
+
+            function formatcells(data)
             {
                 var rowcount = 0;
                 data.attr("class", function() {
                         return "row" + rowcount++; })
-                    .style('background-color', function() {
-                        return normalcolor(d3.select(this).attr("class")); });   
+                    .style("background-color", function() {
+                        var rowClass = d3.select(this).attr("class").substring(3);
+                        if (rowClass % 2 == 0) { return "#B2D9D9"; }
+                        else { return "#FFFFFF"; };
+                    })
+                data.selectAll("td")
+                    .style("background-color", function() {
+                        var cell = d3.select(this);
+                        if (cell[0][0].cellIndex == 2){
+                            var thisRate = +cell.data();
+                            return colorme(0, d3.max(rateArray), thisRate);
+                        }
+                    });
+
+                // highlighting / dehighlighting for mouseover
+                data.on("mouseover", function() {
+                        d3.select(this).classed("active", true);
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this). classed("active", false); });  
             }
 
             // sorts data by State
@@ -122,30 +156,32 @@
             }
 
             // appends rows (from sample code)
-            function renderrows(tbody){            
+            function renderrows(tbody){    
                 var rows = tbody.selectAll("tr")
                     .data(data)
                     .enter()
                     .append("tr")
-            
-                    // highlighting / dehighlighting for mouseover
-                    .on("mouseover", function() {
-                        d3.select(this).classed("active", true); })
-                    .on("mouseout", function() {
-                        d3.select(this). classed("active", false); });
-                formatrows(rows);
                 return rows;
             }
 
-            function normalcolor(row){
-                row = row.substring(3);
-                if (row % 2 == 0) { return "#B2D9D9"; }
-                else { return "#FFFFFF"; }
+            function renderchart(rows){
+                var height = d3.select("td").attr("height");
+                var width = "100px";
+                rows.insert("td").append("svg")
+                   .attr("width", width)
+                   .attr("height", height)
+                   .append("rect")
+                   .attr("height", height)
+                   .attr("width", function(d) { 
+                        return parseFloat(d[2]); })
+                   .attr("background-color", function(d) {
+                        return colorme(0, d3.max(rateArray), parseFloat(d[2]))
+                    });
             }
-            
             
             // appends cells for each row (from sample code)
             function rendercells(rows){
+
                 var column = 0;
                 var cells = rows.selectAll("td")
                     .data(function(row) {
@@ -160,8 +196,7 @@
                         if (column > cols - 1) { column = 0; }
                         return "col" + column++;
                     })
-                    .text(function(d) { 
-                        return d; })
+                    .text(function(d) { return d; })
 
                     // highlight column on mouseover
                     .on("mouseover", function(){
@@ -176,8 +211,8 @@
                         var hovercol = d3.select(this).attr("class")
                             .substring(3, 4);
                         d3.selectAll("td.col" + hovercol)
-                            .classed("active", false);
-                });
+                            .classed("active", false); 
+                    });
             }
         });
         
