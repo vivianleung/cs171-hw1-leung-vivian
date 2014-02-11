@@ -13,16 +13,16 @@
         d3.text("unemp_states_us_nov_2013.tsv", function(text){
 
             // parses text as arrays per row of data, inclu headers
-            var data = d3.tsv.parseRows(text);
+            var alldata = d3.tsv.parseRows(text);
 
             // isolates headers from parsed data (first item in array)
-            var headers = data.shift();
+            var headers = alldata.shift();
 
             // main title for table
             var titles = 'Unemployment Rates For States <br> Monthly Rankings <br> Seasonally Adjusted <br> Dec. 2013P';
 
             // counts number of columns req'd (for colspan)
-            var cols = headers.length;
+            var contentcols = headers.length + 1;
    
 
             // head title for page
@@ -41,52 +41,61 @@
             var tabletitle = table.append("caption")
             .html(titles);
 
-            // column headers
-            var i = 0;
-            var colheads = thead.append("tr")
-                .selectAll("th")
-                .data(headers)
-                .enter()
-                .append("th")
-                .text(function(d) { return d; })
 
-                // sorting mechanism
-                .on("click", function(){
-                    var sortHead = d3.select(this);
-                    var sortcol = sortHead.data();
-                    var direction = sortHead.attr("class");
-                    var data = tbody.selectAll("tr");
-                    var heads = thead.selectAll("th");
-
-                    if (sortcol == "State") { sortState(data, direction); }
-                    else if (sortcol == "Rate" || sortcol == "Rank") { 
-                        sortNumbers(data, direction, sortcol); }
-                    formatcells(data);
-                    // modify header class (up/down) and CSS
-                    if (sortHead.classed("ascending")){
-                        heads.classed({"ascending": false, "descending": false});
-                        sortHead.classed("descending", true);                        
-                    }
-                    else {
-                        heads.classed({"ascending": false, "descending": false});
-                        sortHead.classed("ascending", true);
-                    }
-                });
-
-            var rateArray = [];
-            var rates = data.forEach(function(d) { rateArray.push(+d[2]);
-                });
-
-            console.log(rateArray);
-
+            // calls functions to make chart
             var rows = renderrows(tbody);
             var cells = rendercells(rows);
-
             sortNumbers(tbody.selectAll("tr"), "none", "Rank");
+            renderchart(tbody.selectAll("tr"));
             formatcells(tbody.selectAll("tr"));
-            renderchart(rows);
+            columnheaders();
 
 
+            // renders and responds to column headers
+            function columnheaders()
+            {
+                var i = 0;
+                var colheads = thead.append("tr")
+                    .selectAll("th")
+                    .data(headers)
+                    .enter()
+                    .append("th")
+                    .text(function(d) { return d; })
+
+                    // sorting mechanism
+                    .on("click", function(){
+                        var sortHead = d3.select(this);
+                        var sortcol = sortHead.data();
+                        var direction = sortHead.attr("class");
+                        var data = tbody.selectAll("tr");
+                        var heads = thead.selectAll("th");
+
+                        if (sortcol == "State") { sortState(data, direction); }
+                        else { 
+                            sortNumbers(data, direction, sortcol); }
+                        formatcells(data);
+                        // modify header class (up/down) and CSS
+                        if (sortHead.classed("ascending")){
+                            heads.classed({"ascending": false, "descending": false});
+                            sortHead.classed("descending", true);                        
+                        }
+                        else {
+                            heads.classed({"ascending": false, "descending": false});
+                            sortHead.classed("ascending", true);
+                        }
+                    });                
+            }
+
+            // calculates max rate for sorting and color purposes
+            function rateMax(data)
+            {
+                var rateArray = [];
+                var rates = data.forEach(function(d) { rateArray.push(+d[2]);
+                    });
+                return d3.max(rateArray);
+            }
+
+            // calculates color scale
             function colorme(mini, maxi, value)
             {
                 var color = d3.scale.linear()
@@ -99,34 +108,56 @@
             function formatcells(data)
             {
                 var rowcount = 0;
+                var cols = data[0][0].childElementCount;
+
+                // color attributes for rows
                 data.attr("class", function() {
                         return "row" + rowcount++; })
                     .style("background-color", function() {
                         var rowClass = d3.select(this).attr("class").substring(3);
                         if (rowClass % 2 == 0) { return "#B2D9D9"; }
                         else { return "#FFFFFF"; };
+                    })  
+                    .on("mouseover", function() {
+                        d3.select(this).classed("active", true);
                     })
+                    .on("mouseout", function() {
+                        d3.select(this). classed("active", false);   
+                    });
+
+                // color attributes for cells (columns)
+                var column = 0; 
                 data.selectAll("td")
+                    .attr("class", function() {
+                        if (column > cols - 1 ) { column = 0; }
+                        return "col" + column++;
+                    })
                     .style("background-color", function() {
                         var cell = d3.select(this);
                         if (cell[0][0].cellIndex == 2){
                             var thisRate = +cell.data();
-                            return colorme(0, d3.max(rateArray), thisRate);
+                            return colorme(0, rateMax(alldata), thisRate);
                         }
-                    });
-
-                // highlighting / dehighlighting for mouseover
-                data.on("mouseover", function() {
-                        d3.select(this).classed("active", true);
+                    })
+                    .on("mouseover", function() {
+                        var hovercol = d3.select(this).attr("class")
+                            .substring(3, 4);
+                        d3.selectAll("td.col" + hovercol)
+                            .classed("active", true);
                     })
                     .on("mouseout", function() {
-                        d3.select(this). classed("active", false); });  
+                        var hovercol = d3.select(this).attr("class")
+                            .substring(3, 4);
+                        d3.selectAll("td.col" + hovercol)
+                            .classed("active", false); 
+                    });
             }
 
             // sorts data by State
             function sortState(data, direction){
                 data.sort(function(a,b) {
                     if (direction == "ascending") { 
+                        console.log(a);
                         return d3.descending(a[1], b[1]); } 
                     else { return d3.ascending(a[1], b[1]); }
                 })
@@ -158,61 +189,58 @@
             // appends rows (from sample code)
             function renderrows(tbody){    
                 var rows = tbody.selectAll("tr")
-                    .data(data)
+                    .data(alldata)
                     .enter()
                     .append("tr")
                 return rows;
             }
 
             function renderchart(rows){
-                var height = d3.select("td").attr("height");
-                var width = "100px";
+                var cellheight = d3.select("td").node().parentNode.offsetHeight;
+                var padding = 2;
+                var width = d3.select("td").node().parentNode.offsetWidth;
+
+                // sets bar width scale
+                var barSize = d3.scale.linear()
+                    .domain([0, rateMax(alldata)])
+                    .range([0, width - 10]);
+
                 rows.insert("td").append("svg")
                    .attr("width", width)
-                   .attr("height", height)
+                   .attr("height", function() {
+                        return cellheight - 2 * padding;
+                   })
+                   .style("fill", "transparent")
                    .append("rect")
-                   .attr("height", height)
+                   .attr("height", cellheight - 2 * padding)
                    .attr("width", function(d) { 
-                        return parseFloat(d[2]); })
-                   .attr("background-color", function(d) {
-                        return colorme(0, d3.max(rateArray), parseFloat(d[2]))
+                        return barSize(parseFloat(d[2]))
+                        })
+                   .attr("x", padding)
+                   .attr("y", padding)
+                   .style("fill", function(d) {
+                        return colorme(0, rateMax(alldata), parseFloat(d[2]));
                     });
+                /** i'm sorry this is so janky -- there was an extra td that 
+                  * came up that I can't figure out how to get rid of, so I've 
+                  * left it as an empty column
+                  */
+                headers.push("");
+                headers.push("Unemployment Bar Chart");
             }
             
             // appends cells for each row (from sample code)
             function rendercells(rows){
-
-                var column = 0;
                 var cells = rows.selectAll("td")
                     .data(function(row) {
-                        return d3.range(cols)
+                        return d3.range(contentcols)
                             .map(function(i) {
                                 return row[ Object.keys(row)[i] ];
                         });
                     })
                     .enter()
                     .append("td")
-                    .attr("class", function() {
-                        if (column > cols - 1) { column = 0; }
-                        return "col" + column++;
-                    })
-                    .text(function(d) { return d; })
-
-                    // highlight column on mouseover
-                    .on("mouseover", function(){
-                        var hovercol = d3.select(this).attr("class")
-                            .substring(3, 4);
-                        d3.selectAll("td.col" + hovercol)
-                            .classed("active", true);
-                    })
-
-                    // remove highlight from column on mouseout
-                    .on("mouseout", function() {
-                        var hovercol = d3.select(this).attr("class")
-                            .substring(3, 4);
-                        d3.selectAll("td.col" + hovercol)
-                            .classed("active", false); 
-                    });
+                    .text(function(d) { return d; });
             }
         });
         
