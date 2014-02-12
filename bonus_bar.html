@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <link type="text/css" href="bar.css" rel="stylesheet">
+</head>
+<body>
+  <h1>Unemployment Rates in States</h1>
+  <label><input type="radio" name="order" value="State"> State</label>
+  <label><input type="radio" name="order" value="Rate" checked> Rate</label>
+  <br/>
+  <input type="range" name="points" min="0" max="50" step="1" value="50">
+  <br/>
+  <script type="text/javascript">
+
+    var margin = {top: 50, bottom: 10, left:300, right: 40};
+    var width = 900 - margin.left - margin.right;
+    var height = 900 - margin.top - margin.bottom;
+
+    var xScale = d3.scale.linear().range([0, width]);
+    var yScale = d3.scale.ordinal().rangeRoundBands([0, height], .8, 0);
+
+    var bar_height = 15;
+
+    var state = function(d) { return d.State; };
+
+    var svg = d3.select("body").append("svg")
+      .attr("width", width+margin.left+margin.right)
+      .attr("height", height+margin.top+margin.bottom);
+
+    var g = svg.append("g")
+      .attr("transform", "translate("+margin.left+","+margin.top+")");
+
+    d3.tsv("unemp_states_us_nov_2013.tsv", function(data) {
+
+      var max = d3.max(data, function(d) { return d.Rate; } );
+      var min = 0;
+
+      // text padding  for dx positioning 
+      var padding = -4;
+
+      // calculates dy for text elements
+      var dyShift = function(object) { return (bar_height + object.node().getBBox().height / 2) / 2; };
+
+      xScale.domain([min, max]);
+      yScale.domain(data.map(state));
+
+      var groups = g.append("g")
+        .selectAll("g")
+        .data(data)
+        .enter()
+        .append("g")
+        .attr("transform", function(d, i) { 
+          return "translate(0, " + yScale(d.State) +")"; })
+        .on("mouseover", function() { d3.select(this)
+          .style("font-weight", 700)
+          .style("fill", "#005A5A");
+        })
+        .on("mouseout", function() { d3.select(this)
+          .style("font-weight", "inherit") 
+          .style("fill", "inherit");
+        });        
+
+      // calculates color value for graph
+      var rateMax = parseFloat(d3.max(data.map( function(d) { 
+        return d.Rate; }) ));
+      function colorme(value){
+        var color = d3.scale.linear().domain([0, rateMax])
+          .interpolate(d3.interpolateRgb)
+          .range(["green", "#B22222"]);
+        return color(value);
+      }
+
+      var bars = groups
+        .append("rect")
+        .attr("width", function(d) { return xScale(d.Rate); })
+        .attr("height", bar_height)
+        .style("fill", function(d) { return colorme(parseFloat(d.Rate)); });
+
+      // adds rate labels
+      groups.append("text")
+        .text(function(d) { return d.Rate; })
+        .attr("text-anchor", "end")
+        .attr("dx", function(d) { return xScale(d.Rate) + padding; })
+        .attr("dy", function(d) { return dyShift(d3.select(this)) ; });
+        
+      // adds state labels
+      groups.append("text")
+        .text(function(d) { return d.State; })
+        .attr("text-anchor", "end")
+        .attr("dx", padding )
+        .attr("dy", function(d) { return dyShift(d3.select(this)); })
+      
+      // bools to keep track of the initial sort status 
+      var rateSortAscend = null;
+      var stateSortAscend = null;
+      
+      d3.selectAll("input[type=radio]").on("click", function() { 
+        reorder(d3.select(this)); 
+      });
+
+
+      d3.selectAll("input[type=range]").on("change", function() {
+        filter(d3.select(this).property("value"));});
+      
+      function filter(k,sData) {
+        console.log(k, sData);
+
+        var datamap = sData.map( function(d) { return d.State; });
+        
+        var curyScale = yScale.copy()
+          .domain(sData.map(function(d) { return d.State;} ));             
+        groups
+          .transition()
+          .duration(750)
+          .delay(function(d, i) { return i * 10; })
+          .attr("transform", function(d, i) {
+            if (i > k) { return "translate(0, "+ (svg.attr("height") + 10) +")"; }
+            else { return "translate(0, "+ curyScale(d.State)   +")"; }
+          });
+      
+      }
+
+
+      function reorder(sortBy) {
+
+        var sortedData;
+        // sort data
+        if (sortBy.attr("value") == "Rate") { 
+
+          data.forEach(function(d) { d.Rate = parseFloat(d.Rate); });
+          
+          // for input into sort function
+          var makeAscend = -1;
+          if (rateSortAscend) { makeAscend = 1; }
+
+          sortedData = data.sort(function(a, b) {
+            if (a.Rate < b.Rate) { return makeAscend; }
+            else if (a.Rate > b.Rate) { return -makeAscend; }
+            else { 
+              if (makeAscend == -1) { return d3.ascending(a.State, b.State); }
+              else { return d3.descending(a.State, b.State); }
+            }
+          });
+
+          // flip switch to indicate current sort direction
+          rateSortAscend = !rateSortAscend;
+        }
+
+        // sort by State
+        else {
+
+          sortedData = data.sort(function(a,b) {
+            if (stateSortAscend) { return d3.descending(a.State, b.State); } 
+            else { return d3.ascending(a.State, b.State); }
+          });
+          stateSortAscend = !stateSortAscend;
+        }
+
+        // transform bars
+        var newyScale = yScale.copy().domain(data.map(function(d) { 
+          return d.State;} ));
+        groups
+          .transition()
+          .duration(750)
+          .delay(function(d, i) { return i * 10; })
+          .attr("transform", function(d, i) {
+            return "translate(0, "+ newyScale(d.State) +")";
+          });
+
+        var filterK = d3.select("input[type=range]").property("value");
+        filter(filterK, sortedData);
+      }
+
+    });  
+
+  </script>
+
+</body>
+</html>
+

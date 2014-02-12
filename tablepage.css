@@ -54,16 +54,24 @@ tbody tr .State
 
 .ascending
 {
-	background-color: #800033;
+	background-color: #295200;
 	color: #FFFFFF;
 	cursor: n-resize;
 }
 .descending
 {
-	background-color: #006600;
+	background-color: #800033;
 	color: #FFFFFF;
 	cursor: s-resize;
 
+}
+.ascending svg path
+{
+	fill: yellow;
+}
+.descending svg path
+{
+	fill: white; 
 }
 
 .active
