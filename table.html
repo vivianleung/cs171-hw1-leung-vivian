@@ -95,10 +95,10 @@
             }
 
             // calculates color scale
-            function colorme(mini, maxi, value)
+            function colorme(value)
             {
                 var color = d3.scale.linear()
-                    .domain([mini, maxi])
+                    .domain([0, rateMax()])
                     .interpolate(d3.interpolateRgb)
                     .range(["green", "#B22222"]);
                 return color(value);
@@ -135,7 +135,7 @@
                         var cell = d3.select(this);
                         if (cell[0][0].cellIndex == 2){
                             var thisRate = +cell.data();
-                            return colorme(0, rateMax(), thisRate);
+                            return colorme(thisRate);
                         }
                     })
                     .on("mouseover", function() {
@@ -217,7 +217,7 @@
                    .attr("x", padding)
                    .attr("y", padding)
                    .style("fill", function(d) {
-                        return colorme(0, rateMax(), parseFloat(d[2]));
+                        return colorme(parseFloat(d[2]));
                     });
                 /** i'm sorry this is so janky -- there was an extra td that 
                   * came up that I can't figure out how to get rid of, so I've 

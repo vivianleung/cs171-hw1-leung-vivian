@@ -1,0 +1,25 @@
+body {
+    font-family: 'Alef', sans-serif;
+    font-weight: 400;
+    text-align: center;
+    padding-top: 20px;
+}
+h1
+{
+    color: #005A5A;
+    text-align: center;
+    font-weight: 700;
+}
+label
+{
+    color: #005A5A;
+    font-weight: 700;
+    color: ;
+
+}
+rect {
+    fill-opacity: .8;
+}
+text {
+    font-size: 10px;
+}
