@@ -37,6 +37,10 @@
 
       var max = d3.max(data, function(d) { return d.Rate; } );
       var min = 0;
+      var padding = -4;
+      var dyShift = function(object) { return (bar_height + object.node().getBBox().height / 2) / 2; }
+
+
 
       xScale.domain([min, max]);
       yScale.domain(data.map(state));
@@ -46,12 +50,30 @@
         .data(data)
       .enter()
         .append("g")
-        .attr("transform", function(d, i) { return "translate(0, " + yScale(d.State) +")"; });
+        .attr("transform", function(d, i) { 
+          return "translate(0, " + yScale(d.State) +")"; });
 
       var bars = groups
         .append("rect")
         .attr("width", function(d) { return xScale(d.Rate); })
         .attr("height", bar_height);
+
+      groups.append("text")
+        .text(function(d) { return d.Rate; })
+        .attr("text-anchor", "end")
+        .attr("dx", function(d) { return xScale(d.Rate) + padding; })
+        .attr("dy", function(d) { return dyShift(d3.select(this)) ; });
+        
+      groups.append("text")
+        .text(function(d) { return d.State; })
+        .attr("text-anchor", "end")
+        .attr("dx", padding )
+        .attr("dy", function(d) { return dyShift(d3.select(this)); })
+
+        ;
+        
+
+        
 
     });
   </script>
