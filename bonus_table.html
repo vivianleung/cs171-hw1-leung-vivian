@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CS171 Homework 1</title>
+  <link href='http://fonts.googleapis.com/css?family=Alef' rel='stylesheet' type='text/css'>
+  <link type="text/css" href="bonus_table.css" rel="stylesheet">
+</head>
+<body>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script>
+        // parses tsv as text
+        d3.text("unemp_states_us_nov_2013.tsv", function(text){
+
+            // parses text as arrays per row of data, inclu headers
+            var alldata = d3.tsv.parseRows(text);
+
+            // isolates headers from parsed data (first item in array)
+            var headers = alldata.shift();
+
+            // counts number of columns req'd (for colspan)
+            var contentcols = headers.length + 1;
+   
+            // head title for page
+            var pagetitle = d3.select("body").append("h1")
+            .text("Unemployment Rates For States");
+
+
+            // sets up table DOM
+            var table = d3.select("body").append("table"),
+                thead = table.append("thead"),
+                tbody = table.append("tbody");
+
+            // main title of table
+            var tabletitle = table.append("caption").html('Unemployment Rates For States <br> Monthly Rankings <br> Seasonally Adjusted <br> Dec. 2013P');
+
+
+            // calls functions to make chart
+            var rows = renderrows(tbody);
+            var cells = rendercells(rows);
+            sortNumbers(tbody.selectAll("tr"), "none", "Rank");
+            renderchart(rows);
+            formatcells(tbody.selectAll("tr"));
+            columnheaders(); 
+
+
+
+            // renders and responds to column headers
+            function columnheaders()
+            {
+                var i = 0;
+                var colheads = thead.append("tr")
+                    .selectAll("th")
+                    .data(headers)
+                    .enter()
+                    .append("th")
+                    .text(function(d) { return d; });
+                
+                var thHeight = thead.select("th").node().offsetHeight;
+                colheads.append("svg")
+                    .attr("height", thHeight)
+                    .attr("width", thHeight)
+                    .append("path");
+                    
+                    // sorting mechanism
+                colheads.on("click", function(){
+                        var sortHead = d3.select(this);
+                        var sortcol = sortHead.data()[0].replace(/ /g, ".");
+                        var direction = sortHead.attr("class");
+                        var data = tbody.selectAll("tr");
+                        var heads = thead.selectAll("th");
+
+                        if (sortcol == "State") { sortState(data, direction); }
+                        else { sortNumbers(data, direction, sortcol); }
+                        formatcells(data);
+                        // modify header class (up/down) and CSS
+                        if (sortHead.classed("ascending")){
+                            heads.classed({"ascending": false, "descending": false});
+                            sortHead.classed("descending", true)
+                            //ortHead.select("svg").select("path")
+                              //  .attr("d", d3.svg.symbol.type("triangle-down"));
+
+                        }
+                        else {
+                            heads.classed({"ascending": false, "descending": false});
+                            sortHead.classed("ascending", true);
+                            //sortHead.select("svg").select("path")
+                               // .attr("d", d3.svg.symbol.type("triangle-up"));
+                        }
+                    });                
+            }
+
+            // calculates max rate for sorting and color purposes
+            function rateMax()
+            {   
+                var rates = alldata.map(function(d) { return d[2]; });
+                rates.forEach(function(d) { return parseFloat(d)});
+                return d3.max(rates);
+            }
+
+            // calculates color scale
+            function colorme(value)
+            {
+                var color = d3.scale.linear()
+                    .domain([0, rateMax()])
+                    .interpolate(d3.interpolateRgb)
+                    .range(["green", "#B22222"]);
+                return color(value);
+            }
+
+            function columnID(object){
+                return object.attr("class").replace(/ active/g, "").replace(/ /g, ".");
+            }
+
+            function formatcells(data)
+            {
+                var rowcount = 0;
+                var cols = data[0][0].childElementCount;
+
+                // color attributes for rows
+                data.attr("class", function() {
+                        return "row" + rowcount++; })
+                    .style("background-color", function() {
+                        var rowClass = d3.select(this).attr("class").substring(3);
+                        if (rowClass % 2 == 0) { return "#B2D9D9"; }
+                        else { return "#FFFFFF"; };
+                    })  
+                    .on("mouseover", function() {
+                        d3.select(this).classed("active", true);
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this). classed("active", false);   
+                    });
+
+
+                // color attributes for cells (columns)
+                var column = 0; 
+                data.selectAll("td")
+                    .attr("class", function(i) {
+                        if (column > cols - 1 ) { column = 0; }
+                        return headers[column++];
+                    })
+                    .style("background-color", function() {
+                        var cell = d3.select(this);
+                        if (cell.classed("Rate")){
+                            var thisRate = +cell.data();
+                            return colorme(thisRate);
+                        }
+                    })
+                    .on("mouseover", function() { 
+                        d3.selectAll( "td." + columnID(d3.select(this)) ).classed("active", true);
+                    })
+                    .on("mouseout", function() {
+                        d3.selectAll( "td." + columnID(d3.select(this)) ).classed("active", false); 
+                    })
+
+            }
+
+
+            // sorts data by State
+            function sortState(data, direction){
+                data.sort(function(a,b) {
+                    if (direction == "ascending") { 
+                        return d3.descending(a[1], b[1]); } 
+                    else { return d3.ascending(a[1], b[1]); }
+                })
+            }
+
+            // sorts data by Rate
+            function sortNumbers(data, direction, sortcol)
+            {
+                // if current sort is ascending (i.e want to sort from high to low, flip the switch)
+                var makeAscend = -1;
+                if (direction != "ascending") { makeAscend = 1; }
+
+                // figure out which column is being sorted
+                var i = null;
+                if (sortcol == "Rank") { i = 0; }
+                else { i = 2; }
+
+                data.each(function(d){ d[i] = parseFloat(d[i]); })   
+                    .sort(function(a, b) {
+                        if (a[i] > b[i]) { return makeAscend; }
+                        else if (a[i] < b[i]) { return -makeAscend; }
+                        else { 
+                            if (makeAscend == 1) { return d3.ascending(a[1], b[1]); }
+                            else { return d3.descending(a[1], b[1]); }
+                        }
+                    })
+            }
+
+            // appends rows (from sample code)
+            function renderrows(tbody){    
+                var rows = tbody.selectAll("tr")
+                    .data(alldata)
+                    .enter()
+                    .append("tr")
+                return rows;
+            }
+
+            function renderchart(rows){
+                var cellheight = d3.select("td").node().parentNode.offsetHeight;
+                var padding = 2;
+                var width = d3.select("td").node().parentNode.offsetWidth;
+
+                // sets bar width scale
+                var barSize = d3.scale.linear()
+                    .domain([0, rateMax()])
+                    .range([0, width - 10]);
+
+                rows.insert("td", ":first-child").append("svg")
+                   .attr("width", width)
+                   .attr("height", function() {
+                        return cellheight - 2 * padding;
+                   })
+                   .style("fill", "transparent")
+                   .append("rect")
+                   .attr("height", cellheight - 2 * padding)
+                   .attr("width", function(d) { 
+                        return barSize(parseFloat(d[2]))
+                        })
+                   .attr("x", padding)
+                   .attr("y", padding)
+                   .style("fill", function(d) {
+                        return colorme(parseFloat(d[2]));
+                    });
+                /** i'm sorry this is so janky -- there was an extra td that 
+                  * came up that I can't figure out how to get rid of, so I've 
+                  * left it as an empty column
+                  */
+                headers.unshift("Unemployment Bar Chart");
+            }
+            
+            // appends cells for each row (from sample code)
+            function rendercells(rows){
+                var cells = rows.selectAll("td")
+                    .data(function(row) {
+                        return d3.range(contentcols)
+                            .map(function(i) {
+                                return row[ Object.keys(row)[i] ];
+                        });
+                    })
+                    .enter()
+                    .append("td")
+                    .text(function(d) { return d; });
+            }
+        });
+        
+
+
+    </script>
+</body>
+</html>
