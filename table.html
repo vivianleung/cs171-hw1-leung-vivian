@@ -87,12 +87,11 @@
             }
 
             // calculates max rate for sorting and color purposes
-            function rateMax(data)
-            {
-                var rateArray = [];
-                var rates = data.forEach(function(d) { rateArray.push(+d[2]);
-                    });
-                return d3.max(rateArray);
+            function rateMax()
+            {   
+                var rates = alldata.map(function(d) { return d[2]; });
+                rates.forEach(function(d) { return parseFloat(d)});
+                return d3.max(rates);
             }
 
             // calculates color scale
@@ -101,7 +100,7 @@
                 var color = d3.scale.linear()
                     .domain([mini, maxi])
                     .interpolate(d3.interpolateRgb)
-                    .range(["green", "orangered"]);
+                    .range(["green", "#B22222"]);
                 return color(value);
             }
 
@@ -136,7 +135,7 @@
                         var cell = d3.select(this);
                         if (cell[0][0].cellIndex == 2){
                             var thisRate = +cell.data();
-                            return colorme(0, rateMax(alldata), thisRate);
+                            return colorme(0, rateMax(), thisRate);
                         }
                     })
                     .on("mouseover", function() {
@@ -157,7 +156,6 @@
             function sortState(data, direction){
                 data.sort(function(a,b) {
                     if (direction == "ascending") { 
-                        console.log(a);
                         return d3.descending(a[1], b[1]); } 
                     else { return d3.ascending(a[1], b[1]); }
                 })
@@ -175,7 +173,7 @@
                 if (sortcol == "Rank") { i = 0; }
                 else { i = 2; }
 
-                data.each(function(d){ d[i] = +d[i]; })   
+                data.each(function(d){ d[i] = parseFloat(d[i]); })   
                     .sort(function(a, b) {
                         if (a[i] > b[i]) { return makeAscend; }
                         else if (a[i] < b[i]) { return -makeAscend; }
@@ -202,7 +200,7 @@
 
                 // sets bar width scale
                 var barSize = d3.scale.linear()
-                    .domain([0, rateMax(alldata)])
+                    .domain([0, rateMax()])
                     .range([0, width - 10]);
 
                 rows.insert("td").append("svg")
@@ -219,7 +217,7 @@
                    .attr("x", padding)
                    .attr("y", padding)
                    .style("fill", function(d) {
-                        return colorme(0, rateMax(alldata), parseFloat(d[2]));
+                        return colorme(0, rateMax(), parseFloat(d[2]));
                     });
                 /** i'm sorry this is so janky -- there was an extra td that 
                   * came up that I can't figure out how to get rid of, so I've 

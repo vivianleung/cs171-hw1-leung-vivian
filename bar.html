@@ -3,16 +3,25 @@
 <head>
 <script src="http://d3js.org/d3.v3.min.js"></script>
   <style type="text/css">
+    body {
+      text-align: center;
+      padding-top: 20px;
+    }
     rect {
         fill: teal;
         fill-opacity: .8;
     }
     text {
-        font: 10px sans-serif;
+        font-size: 10px;
+        font-family: 'Alef', sans-serif;
+        font-weight: 400;
     }
   </style>
 </head>
 <body>
+  <label><input type="radio" name="order" value="State"> State</label>
+  <label><input type="radio" name="order" value="Rate" checked> Rate</label>
+  <br/>
   <script type="text/javascript">
 
     var margin = {top: 50, bottom: 10, left:300, right: 40};
@@ -37,10 +46,12 @@
 
       var max = d3.max(data, function(d) { return d.Rate; } );
       var min = 0;
+
+      // text padding  for dx positioning 
       var padding = -4;
-      var dyShift = function(object) { return (bar_height + object.node().getBBox().height / 2) / 2; }
 
-
+      // calculates dy for text elements
+      var dyShift = function(object) { return (bar_height + object.node().getBBox().height / 2) / 2; };
 
       xScale.domain([min, max]);
       yScale.domain(data.map(state));
@@ -48,7 +59,7 @@
       var groups = g.append("g")
         .selectAll("g")
         .data(data)
-      .enter()
+        .enter()
         .append("g")
         .attr("transform", function(d, i) { 
           return "translate(0, " + yScale(d.State) +")"; });
@@ -58,24 +69,85 @@
         .attr("width", function(d) { return xScale(d.Rate); })
         .attr("height", bar_height);
 
+      // adds rate labels
       groups.append("text")
         .text(function(d) { return d.Rate; })
         .attr("text-anchor", "end")
         .attr("dx", function(d) { return xScale(d.Rate) + padding; })
         .attr("dy", function(d) { return dyShift(d3.select(this)) ; });
         
+      // adds state labels
       groups.append("text")
         .text(function(d) { return d.State; })
         .attr("text-anchor", "end")
         .attr("dx", padding )
-        .attr("dy", function(d) { return dyShift(d3.select(this)); })
+        .attr("dy", function(d) { return dyShift(d3.select(this)); });
+      
+      d3.selectAll("input").on("click", function() {
+        reorder(d3.select(this));
+      });
 
-        ;
+      var rateSortAscend = null;
+      var stateSortAscend = null;
+
+      function reorder(sortBy) {
+        // sort data
+        if (sortBy.attr("value") == "Rate") {
+          data.forEach(function(d) { d.Rate = parseFloat(d.Rate); });
+          
+          // flips sign for 
+          var makeAscend = -1;
+          if (!rateSortAscend) { makeAscend = 1; }
+
+          // sorry, for some reason, sort would error as undefined if i did not specify data again.
+          data.sort(function(a, b) {
+                if (a.Rate > b.Rate) { return makeAscend; }
+                else if (a.Rate < b.Rate) { return -makeAscend; }
+                else { 
+                    if (makeAscend == 1) { return d3.ascending(a.State, b.State); }
+                    else { return d3.descending(a.State, b.State); }
+                }
+          });
+          // flip switch to indicate current sort direction
+          rateSortAscend = !rateSortAscend;
+        }
+
+        // sort by State
+        else {
+          data.sort(function(a,b) {
+            if (stateSortAscend) { return d3.descending(a.State, b.State); } 
+            else { return d3.ascending(a.State, b.State); }
+          });
+          stateSortAscend = !stateSortAscend;
+        }
+        var newyScale = yScale.copy().domain(data.map(function(d) { 
+          return d.State;} ));
+
+        // transform bars
+        groups
+          .transition()
+          .duration(750)
+          .delay(function(d, i) { return i * 10; })
+          .attr("transform", function(d, i) {
+            return "translate(0, "+ (-yScale(d.State)) +")";
+          })
+          .attr("transform", function(d, i) {
+            var transY = newyScale(d.State);
+            return "translate(0, "+ transY +")";
+          });
+/*        groups
+          .selectAll("text")
+          .attr("transform", function(d, i) {
+            var transY = newyScale(d.State) - yScale(d.State);
+            return "translate(0, "+ transY +")";
+          });*/
+
+      }
+
+    });  // end bracket });
         
-
-        
-
-    });
   </script>
+
 </body>
 </html>
+
