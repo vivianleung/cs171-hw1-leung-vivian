@@ -72,6 +72,7 @@
       // calculates color value for graph
       var rateMax = parseFloat(d3.max(data.map( function(d) { 
         return d.Rate; }) ));
+      
       function colorme(value){
         var color = d3.scale.linear().domain([0, rateMax])
           .interpolate(d3.interpolateRgb)
@@ -106,7 +107,7 @@
       d3.selectAll("input").on("click", function() { 
         reorder(d3.select(this)); });
 
-      function reorder(sortBy) {
+    var reorder = function(sortBy) {
 
         // sort data
         if (sortBy.attr("value") == "Rate") { 
@@ -142,14 +143,15 @@
         }
 
         // transform bars
-        var newyScale = yScale.copy().domain(data.map(function(d) { 
-          return d.State;} ));
+        yScale.domain(data.map(function(d) { return d.State;} ));
+
+
         groups
           .transition()
           .duration(750)
           .delay(function(d, i) { return i * 10; })
           .attr("transform", function(d, i) {
-            return "translate(0, "+ newyScale(d.State) +")";
+            return "translate(0, "+ yScale(d.State) +")";
           });
       }
     });  

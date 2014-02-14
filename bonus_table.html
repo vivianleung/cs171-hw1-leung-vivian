@@ -123,10 +123,9 @@
           var cols = data.node().childElementCount;
           data.selectAll("td")
             .attr("class", function(d, i) { return headers[i]; })
-            .style("background-color", function() {
-              var cell = d3.select(this);
-              if (cell.classed("Rate")){ 
-                return colorme( parseFloat(cell.data()) ); } })
+            .style("background-color", function(d, i) {
+              if (i == 3 ){ 
+                return colorme( parseFloat(d) ); } })
             .on("mouseover", function() { 
               d3.selectAll("td." + parseID(d3.select(this))).classed("active", true); })
             .on("mouseout", function() {

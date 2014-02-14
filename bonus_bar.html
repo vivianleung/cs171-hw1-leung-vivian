@@ -32,7 +32,7 @@
       .attr("id", "title")
       .attr("x", (width+margin.left+margin.right) / 2)
       .attr("alignment-baseline", "before-edge");
-      
+
     var g = svg.append("g")
       .attr("transform", "translate("+margin.left+","+margin.top+")");
 
@@ -45,14 +45,13 @@
       yScale.domain(data.map(state));
 
       // calculates dy for text elements
-      var dyShift = function(object, scale) { 
-        console.log(object.node().getBBox(), bar_height(scale));
+      function dyShift(object, scale) { 
         return bar_height(scale)/2 +  object.node().getBBox().height / 2  ; };
 
       function bar_height (scale) { return scale.rangeBand(); };
 
       function colorme(value){
-        var color = d3.scale.linear().domain([0, rateMax])
+        var color = d3.scale.linear().domain([0, max])
           .interpolate(d3.interpolateRgb)
           .range(["green", "#B22222"]);
         return color(value);
@@ -73,11 +72,6 @@
           .style("font-weight", "inherit") 
           .style("fill", "inherit");
         });        
-
-      // calculates color value for graph
-      var rateMax = parseFloat(d3.max(data.map( function(d) { 
-        return d.Rate; }) ));
-
 
       // initializes
       var bars = groups
@@ -105,18 +99,19 @@
       var stateSortAscend = null;
       
       d3.selectAll("input[type=radio]").on("click", function() { 
-        reorder(d3.select(this)); 
+        reorder(d3.select(this))
       });
 
 
       d3.selectAll("input[type=range]").on("change", function() {
-        filter(data);});
+        filter(data);
+      });
       
-      function filter(sData) {
+    var filter = function(sData) {
 
         var k = parseFloat(d3.select("input[type=range]").property("value"));
         var filterData = sData.slice(0, k + 1);
-        var curyScale = yScale.copy().domain((filterData).map(function(d) { return d.State;} ));  
+        yScale.domain((filterData).map(function(d) { return d.State;} ));  
 
 
         // curyScale only applies to filtered States, need to separately change unfiltered groups
@@ -124,21 +119,26 @@
           .transition()
           .duration(750)
           .delay(function(d, i) { return i * 10; })
-          .attr("transform", function(d, i) {
-            if (i >  k) { 
-              return "translate(0, "+ (svg.attr("height") + 10) +")"; }
-            else { 
-                return "translate(0, "+ curyScale(d.State) +")";} 
-          } );
+          .attr("transform", function(d, i) { 
+            for (var j = 0; j < filterData.length; j++)
+            {
+              if (d.State == filterData[j].State)
+              {
+                return "translate(0, "+ yScale(d.State) +")";
+              }
+            }
+            return "translate(0, "+ (svg.attr("height") + 10) +")"; 
+          } )
+          .selectAll("text").attr("dy", function(d) { return dyShift(d3.select(this), yScale); });
 
         bars
-          .attr("height", function() { return bar_height(curyScale) })
-          .selectAll("text").attr("dy", function(d) { return dyShift(d3.select(this), curyScale); });
+          .attr("height", function() { return bar_height(yScale) });
+        
 
         }
 
 
-      function reorder(sortBy) {
+      var reorder = function(sortBy) {
 
         // sort data
         if (sortBy.attr("value") == "Rate") { 
@@ -163,14 +163,12 @@
 
         // sort by State
         else {
-
           data.sort(function(a,b) {
             if (stateSortAscend) { return d3.descending(a.State, b.State); } 
             else { return d3.ascending(a.State, b.State); }
           });
           stateSortAscend = !stateSortAscend;
         }
-
         filter(data);
       }
 
