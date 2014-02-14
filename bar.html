@@ -5,10 +5,10 @@
   <link type="text/css" href="bar.css" rel="stylesheet">
 </head>
 <body>
-  <h1>Unemployment Rates in States</h1>
-  <label><input type="radio" name="order" value="State"> State</label>
-  <label><input type="radio" name="order" value="Rate" checked> Rate</label>
   <br/>
+  <label><input type="radio" name="order" value="State">State</label>
+  <label><input type="radio" name="order" value="Rate" checked> Rate</label>
+
   <script type="text/javascript">
 
 
@@ -23,10 +23,18 @@
     var bar_height = 15;
 
     var state = function(d) { return d.State; };
-
+    
     var svg = d3.select("body").append("svg")
       .attr("width", width+margin.left+margin.right)
       .attr("height", height+margin.top+margin.bottom);
+
+
+    var title = d3.select("body").insert("text", ":first-child")
+      .text("Unemployment Data for States")
+      .attr("text-anchor", "middle")
+      .attr("id", "title")
+      .attr("x", (width+margin.left+margin.right) / 2)
+      .attr("alignment-baseline", "before-edge");
 
     var g = svg.append("g")
       .attr("transform", "translate("+margin.left+","+margin.top+")");

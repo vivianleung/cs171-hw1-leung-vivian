@@ -4,11 +4,13 @@ body {
     text-align: center;
     padding-top: 20px;
 }
-h1
+#title
 {
+    font-family: 'Alef', sans-serif;
+    font-weight: 700;
+    font-size: 40px;
     color: #005A5A;
     text-align: center;
-    font-weight: 700;
 }
 label
 {
